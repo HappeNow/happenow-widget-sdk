@@ -1,6 +1,6 @@
 {
   "name": "@happenow/widget-sdk",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "SDK for building HappeNow widgets",
   "type": "module",
   "main": "./dist/index.cjs",
