@@ -1,0 +1,82 @@
+# HappeNow Widget SDK
+
+> Zero-dependency TypeScript SDK for building widgets on the HappeNow event platform.
+
+The `@happenow/widget-sdk` package provides a JavaScript/TypeScript interface for widgets embedded as iframes in HappeNow event pages. It handles authentication via JWT, parent-child iframe communication via postMessage, and exposes APIs for community feed posting and iframe resizing.
+
+## Installation
+
+```
+npm install @happenow/widget-sdk
+```
+
+The package ships dual ESM and CommonJS builds with full TypeScript type definitions.
+
+## Core API
+
+### HappeNowWidget
+
+The main class. Import and instantiate it to interact with the host page.
+
+```ts
+import { HappeNowWidget } from "@happenow/widget-sdk";
+const widget = new HappeNowWidget();
+```
+
+#### `init(): Promise<WidgetContext>`
+
+Initializes the widget by sending a `happenow:ready` message to the parent page and waiting for a `happenow:init` response containing a JWT. Returns a `WidgetContext` with user and event information. Times out after 10 seconds.
+
+#### `createPost(options: CreatePostOptions): Promise<Post>`
+
+Publishes a post to the event's community feed. Requires the user to be an admin or an approved registrant.
+
+- `options.content` (string) — post body text
+- `options.images` (string[], optional) — array of image URLs
+
+#### `resize(height: number): void`
+
+Requests the parent page to resize the widget iframe to the given height in pixels.
+
+#### `on(event, callback): void` / `off(event, callback): void`
+
+Register or remove event listeners. Currently supports the `"init"` event.
+
+#### `destroy(): void`
+
+Cleans up all listeners and internal state. The widget instance cannot be used after calling this.
+
+## Key Types
+
+### WidgetContext
+
+Returned by `init()`. Contains:
+
+- `eventId` — the event identifier
+- `userId` — pairwise user ID, unique per widget
+- `userName`, `userEmail`, `userAvatar` — user profile info
+- `isAdmin` — whether the user is an event admin
+- `registration` — registration details (`status`, `ticketId`, `ticketName`) or null
+- `token` — raw JWT string for custom API calls
+
+### CreatePostOptions
+
+- `content` (string) — post text
+- `images` (string[], optional) — image URLs
+
+### Post
+
+- `id` (string)
+- `content` (string)
+- `createdAt` (string)
+
+## Source Structure
+
+- `src/index.ts` — public exports
+- `src/sdk.ts` — HappeNowWidget class implementation
+- `src/types.ts` — TypeScript interfaces and types
+- `src/utils.ts` — JWT decoding utility (no external dependencies)
+
+## License
+
+MIT
