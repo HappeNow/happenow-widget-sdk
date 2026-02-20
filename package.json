@@ -1,5 +1,5 @@
 {
-  "name": "happenow-widget-sdk",
+  "name": "@happenow/widget-sdk",
   "version": "0.1.0",
   "description": "SDK for building HappeNow widgets",
   "type": "module",
@@ -29,5 +29,12 @@
     "widget",
     "sdk"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/HappeNow/happenow-widget-sdk.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  }
 }
