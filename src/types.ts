@@ -1,3 +1,12 @@
+export interface WidgetOptions {
+  /**
+   * Explicitly enable or disable dev mode.
+   * When `true`, injects a floating dev panel for mock data configuration.
+   * When `undefined`, auto-detects: dev mode activates when not inside an iframe.
+   */
+  dev?: boolean
+}
+
 export interface WidgetContext {
   eventId: string
   userId: string

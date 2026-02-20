@@ -1,4 +1,5 @@
-import type { WidgetContext, WidgetEventMap, CreatePostOptions, Post } from "./types"
+import type { WidgetContext, WidgetOptions, WidgetEventMap, CreatePostOptions, Post } from "./types"
+import type { DevPanel } from "./dev"
 import { decodeJwtPayload } from "./utils"
 
 export class HappeNowWidget {
@@ -8,15 +9,36 @@ export class HappeNowWidget {
   private listeners: Map<string, Set<(...args: any[]) => void>> = new Map()
   private messageHandler: ((e: MessageEvent) => void) | null = null
   private destroyed = false
+  private devMode: boolean
+  private devPanel: DevPanel | null = null
+
+  constructor(options?: WidgetOptions) {
+    if (options?.dev !== undefined) {
+      this.devMode = options.dev
+    } else if (typeof window !== "undefined") {
+      // Auto-detect: not in iframe → dev mode
+      this.devMode = window.self === window.top
+    } else {
+      this.devMode = false
+    }
+  }
 
   /**
    * Initialize the widget.
-   * Sends `happenow:ready` to the parent, then waits for `happenow:init` with the token.
-   * Returns the widget context derived from the JWT payload.
+   *
+   * **Production**: Sends `happenow:ready` to the parent, then waits for
+   * `happenow:init` with the JWT. Times out after 10 seconds.
+   *
+   * **Dev mode**: Immediately resolves with mock data and injects a floating
+   * dev panel for configuring the mock context.
    */
   init(): Promise<WidgetContext> {
     if (this.destroyed) {
       return Promise.reject(new Error("Widget has been destroyed"))
+    }
+
+    if (this.devMode) {
+      return this.initDev()
     }
 
     return new Promise<WidgetContext>((resolve, reject) => {
@@ -73,11 +95,25 @@ export class HappeNowWidget {
   }
 
   /**
-   * Create a post (blats) on the event's community feed.
+   * Create a post on the event's community feed.
    * Requires the widget to be initialized.
    */
   async createPost(options: CreatePostOptions): Promise<Post> {
-    if (!this.token || !this.apiUrl) {
+    if (!this.token) {
+      throw new Error("Widget not initialized. Call init() first.")
+    }
+
+    // Dev mode: return mock post
+    if (this.devMode) {
+      console.log("[HappeNow Dev] createPost:", options)
+      return {
+        id: `post_dev_${Date.now()}`,
+        content: options.content,
+        createdAt: new Date().toISOString(),
+      }
+    }
+
+    if (!this.apiUrl) {
       throw new Error("Widget not initialized. Call init() first.")
     }
 
@@ -108,6 +144,10 @@ export class HappeNowWidget {
    * Request the parent page to resize the widget iframe to the given height.
    */
   resize(height: number): void {
+    if (this.devMode) {
+      console.log(`[HappeNow Dev] resize(${height})`)
+      return
+    }
     window.parent.postMessage(
       { type: "happenow:resize", payload: { height } },
       "*"
@@ -136,6 +176,8 @@ export class HappeNowWidget {
    */
   destroy(): void {
     this.destroyed = true
+    this.devPanel?.unmount()
+    this.devPanel = null
     if (this.messageHandler) {
       window.removeEventListener("message", this.messageHandler)
       this.messageHandler = null
@@ -144,6 +186,28 @@ export class HappeNowWidget {
     this.context = null
     this.token = null
     this.apiUrl = null
+  }
+
+  // ─── Private ─────────────────────────────────────────
+
+  private async initDev(): Promise<WidgetContext> {
+    // Dynamic import so dev panel code is only loaded in dev mode
+    const { DevPanel, loadConfig, randomMockConfig, buildContext } = await import("./dev")
+
+    const config = loadConfig() || randomMockConfig()
+
+    this.devPanel = new DevPanel(config, (ctx) => {
+      this.context = ctx
+      this.token = ctx.token
+      this.emit("init", ctx)
+    })
+    this.devPanel.mount()
+
+    const ctx = buildContext(config)
+    this.context = ctx
+    this.token = ctx.token
+    this.emit("init", ctx)
+    return ctx
   }
 
   private emit(event: string, data: any): void {

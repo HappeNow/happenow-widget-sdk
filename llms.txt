@@ -23,30 +23,56 @@ import { HappeNowWidget } from "@happenow/widget-sdk";
 const widget = new HappeNowWidget();
 ```
 
+#### Constructor Options
+
+```ts
+new HappeNowWidget(options?: WidgetOptions)
+```
+
+- `options.dev` (boolean, optional) — Explicitly enable or disable dev mode. When `undefined`, auto-detects: dev mode activates when the page is not inside an iframe (`window.self === window.top`).
+
 #### `init(): Promise<WidgetContext>`
 
-Initializes the widget by sending a `happenow:ready` message to the parent page and waiting for a `happenow:init` response containing a JWT. Returns a `WidgetContext` with user and event information. Times out after 10 seconds.
+Initializes the widget. Behavior depends on the mode:
+
+- **Production** (inside iframe): Sends `happenow:ready` to the parent page and waits for `happenow:init` with a JWT. Times out after 10 seconds.
+- **Dev mode** (local development): Immediately resolves with mock data and injects a floating dev panel in the bottom-left corner for configuring the mock context.
 
 #### `createPost(options: CreatePostOptions): Promise<Post>`
 
-Publishes a post to the event's community feed. Requires the user to be an admin or an approved registrant.
+Publishes a post to the event's community feed. Requires the user to be an admin or an approved registrant. In dev mode, logs to console and returns a mock post.
 
 - `options.content` (string) — post body text
 - `options.images` (string[], optional) — array of image URLs
 
 #### `resize(height: number): void`
 
-Requests the parent page to resize the widget iframe to the given height in pixels.
+Requests the parent page to resize the widget iframe to the given height in pixels. In dev mode, logs to console.
 
 #### `on(event, callback): void` / `off(event, callback): void`
 
-Register or remove event listeners. Currently supports the `"init"` event.
+Register or remove event listeners. Supports the `"init"` event, which fires on initial load and whenever the dev panel applies new mock config.
 
 #### `destroy(): void`
 
-Cleans up all listeners and internal state. The widget instance cannot be used after calling this.
+Cleans up all listeners, dev panel, and internal state. The widget instance cannot be used after calling this.
+
+## Dev Panel
+
+When running in dev mode, the SDK injects a floating dev toolbar (similar to the Next.js dev indicator):
+
+- **Badge**: A small purple "DEV" pill in the bottom-left corner. Click to open the panel.
+- **Panel**: Configure all WidgetContext fields — user name, email, avatar, admin toggle, event ID, registration status/ticket.
+- **Randomize**: Generate random mock data with one click.
+- **Apply**: Save config to localStorage (persists across reloads) and emit an `"init"` event with the new context.
+
+Dev mode auto-activates when the page is not embedded in an iframe, so `npm run dev` works out of the box without any configuration.
 
 ## Key Types
+
+### WidgetOptions
+
+- `dev` (boolean, optional) — explicitly enable/disable dev mode
 
 ### WidgetContext
 
@@ -74,6 +100,7 @@ Returned by `init()`. Contains:
 
 - `src/index.ts` — public exports
 - `src/sdk.ts` — HappeNowWidget class implementation
+- `src/dev.ts` — Dev panel UI, mock data generation, localStorage persistence
 - `src/types.ts` — TypeScript interfaces and types
 - `src/utils.ts` — JWT decoding utility (no external dependencies)
 
