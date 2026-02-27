@@ -79,14 +79,6 @@ console.log(post.createdAt) // "2026-02-20T10:00:00.000Z"
 
 Requires the user to be an event admin or an approved registrant.
 
-### `widget.resize(height: number)`
-
-Request the parent page to resize the widget iframe.
-
-```typescript
-widget.resize(400)
-```
-
 ### `widget.on(event, callback)` / `widget.off(event, callback)`
 
 Listen for widget events.

@@ -141,20 +141,6 @@ export class HappeNowWidget {
   }
 
   /**
-   * Request the parent page to resize the widget iframe to the given height.
-   */
-  resize(height: number): void {
-    if (this.devMode) {
-      console.log(`[HappeNow Dev] resize(${height})`)
-      return
-    }
-    window.parent.postMessage(
-      { type: "happenow:resize", payload: { height } },
-      "*"
-    )
-  }
-
-  /**
    * Register an event listener.
    */
   on<K extends keyof WidgetEventMap>(event: K, callback: (data: WidgetEventMap[K]) => void): void {
